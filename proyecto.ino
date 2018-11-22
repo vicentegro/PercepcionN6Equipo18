@@ -37,10 +37,8 @@ pinMode(echo,INPUT);
 
 void loop(){
  distanciaOb=medicionSensor(); //obtiene dato del sensor
- int theta=deteccion(distanciaOb); //obtiene posicion del servo si hay objeto a 5 cm de distancia
- if (theta > 90){direccionOb=servito.read()-90;} //ajusta con respecto al centro
- else if (theta <90){direccionOb=90-servito.read();}
- else if(theta ==90){direccionOb=theta;}
+ direccionOb=deteccion(distanciaOb); //obtiene posicion del servo si hay objeto a 10 cm de distancia
+ 
  /*se realiza nueva medicion para saber si el objeto cambió su posición*/
  distanciaNew=medicionSensor(); //nueva medicion
  dirNew=deteccion(distanciaNueva); //nueva deteccion
@@ -63,16 +61,27 @@ int deteccion(long x){
   int theta; //desplazamiento rotacional del servo
    for(int i=0;i<=180;i++){
     servito.write(i); //mueve poco a poco la flecha del servo
-    if(x>=0 && x<=10){theta=servito.read();} //si encuentra algo en una distancia max de 10 cm, el objeto se toma como detectado
-    return theta;
+    if(x>=0 && x<=10){
+      theta=servito.read(); //si encuentra algo en una distancia max de 10 cm, el objeto se toma como detectado
+      if (theta > 90){th=theta-90;} //ajusta con respecto al centro
+      else if (theta <90){th=90-theta;}
+      else if(theta ==90){th=theta;} 
+      return th;
+      }
     }
     delay(100);
     for(int j=180;j>=0;j--){
     servito.write(j);
-    if(x>=0 && x<=10){theta=servito.read();} //si encuentra algo en una distancia el objeto se toma como detectado
-    return theta;
+    if(x>=0 && x<=10){
+      theta=servito.read(); //si encuentra algo en una distancia el objeto se toma como detectado
+      if (theta > 90){th=theta-90;} //ajusta con respecto al centro
+      else if (theta <90){th=90-theta;}
+      else if(theta ==90){th=theta;} 
+      return th;
+      }
     }
     delay(100);
+  
   }
 
 long medicionSensor(){
