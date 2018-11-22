@@ -3,8 +3,8 @@
 #include <Servo.h>
 #include <LEANTEC_ControlMotor.h>
 
-double inputs[2];
-int reglas=9;
+double inputs[2]; //array de entradas para sistema difuso
+int reglas=9; //cantidad de reglas difusas
 double entradas = 2;//NTI=NTV-1;
 
 int tabla_reglas[9][4]=    {{1,	1,	1,	1},
@@ -15,21 +15,22 @@ int tabla_reglas[9][4]=    {{1,	1,	1,	1},
                             {2,	3,	3,	3},
                             {3,	1,	2,	1},
                             {3,	2,	3,	2},
-                            {3,	3,	3,	3}};
-int trigger=3;
-int echo=2;
+                            {3,	3,	3,	3}}; //tabla de reglas difusas
+int trigger=3; //pin de trigger del sensor
+int echo=2; //pin de echo del sensor
 Servo servito; //declara servo
-long distanciaOb;
-int direccionOb;
+controlMotor control(); //declara el control para los motores del auto
+long distanciaOb; //variable de distancia del objeto
+int direccionOb; //direccion del objeto
 long distanciaNew;
 long avanceOb;
 int giroOb;
-double giroAuto,velAuto;
+double giroAuto,velAuto; //salidas del sistema difuso con las que se controla el auto
 
 
 void setup(){
 servito.attach(10); //definir puerto para servo
-pinMode(trigger,OUTPUT);
+pinMode(trigger,OUTPUT); //define puertos para sensor
 pinMode(echo,INPUT);
 }
 
@@ -44,8 +45,8 @@ void loop(){
  distanciaNew=medicionSensor(); //nueva medicion
  dirNew=deteccion(distanciaNueva); //nueva deteccion
  /*NUEVAS VARIABLES*/
- giroOb=dirNew-direccionOb; //objeto se desplaza a un lado
- avanceOb=distanciaNew-distanciaOb; //objeto avanza
+ giroOb=dirNew-direccionOb; //objeto se desplaza a un lado u otro
+ avanceOb=distanciaNew-distanciaOb; //objeto avanza o retrocede
  /******************************/
    inputs[0]=double(giroOb); //CONVERSION y guardado en array PARA SISTEMA DIFUSO
    inputs[1]=double(avanceOb);
@@ -61,14 +62,14 @@ void loop(){
 int deteccion(long x){
   int theta; //desplazamiento rotacional del servo
    for(int i=0;i<=180;i++){
-    servito.write(i);
-    if(x>=4 && x<=6){theta=servito.read();} //si encuentra algo entre 4 y 6, el objeto se toma como detectado
+    servito.write(i); //mueve poco a poco la flecha del servo
+    if(x>=0 && x<=10){theta=servito.read();} //si encuentra algo en una distancia max de 10 cm, el objeto se toma como detectado
     return theta;
     }
     delay(100);
-    for(int j=180;jj>=0;j--){
+    for(int j=180;j>=0;j--){
     servito.write(j);
-    if(x>=4 && x<=6){theta=servito.read();} //si encuentra algo entre 4 y 6, el objeto se toma como detectado
+    if(x>=0 && x<=10){theta=servito.read();} //si encuentra algo en una distancia el objeto se toma como detectado
     return theta;
     }
     delay(100);
@@ -120,14 +121,14 @@ double Type1FS(double x,int n,double V[]){
     }
   }
   
-double FuzzySysY1(double X[],int DB[][4])
+double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA
 {
-    double PARAM[3][3]={{-1,-0.5,0}
+    double PARAM[3][3]={{-1,-0.5,0} //RANGOS DE LAS FUNCIONES DE MEMBRESIA
                       ,{-0.5, 0, 0.5}
                       ,{0, 0.5, 1}};
                       
     double V[3];
-    double AC[3]={0,0.5,1};
+    double AC[3]={0,0.5,1}; //MAXIMOS DE LA SALIDA PARA DESFUSIFICACION
     double Fo[reglas];
     for(int r=0;r<=(reglas-1);r++){
       double sumin=1;
@@ -135,21 +136,21 @@ double FuzzySysY1(double X[],int DB[][4])
       for(int i=0;i<=(entradas-1);i++){
             n=DB[r][i]-1;
             if(n>-1){
-            V[0]=PARAM[n][0];
+            V[0]=PARAM[n][0]; //ASIGNACION DE RANGOS PARA LAS FUNCIONES DE MEMBRESIA
             V[1]=PARAM[n][1];
             V[2]=PARAM[n][2];
          }
-          double mf=Type1FS(X[i],(n+1),V);
-          sumin=min(sumin,mf);
+          double mf=Type1FS(X[i],(n+1),V); //OBTIENE VALORES FUSIFICADOS DE LAS ENTRADAS
+          sumin=min(sumin,mf); //SE REALIZA LA UNION DIFUSA DE LAS ENTRADAS (AND)
        }
-     Fo[r] = sumin;
+     Fo[r] = sumin; //SE GUARDA CONJUNTO DIFUSO DE REGLAS YA UNIDAS
    }
       double sum1=0;
       double sum2=0.00000001;
       double sum3=0;
       double sum4=0.00000001;
-      
-      for(int r=0;r<=(reglas);r++){
+      /***PROCESO DE DESFUSIFICACION POR ALTURAS****/
+      for(int r=0;r<=(reglas);r++){ 
          sum1=(sum1+(Fo[r]*AC[DB[r][3]-1]));
          sum2=(sum2+Fo[r]);
          }
@@ -159,11 +160,11 @@ double FuzzySysY1(double X[],int DB[][4])
          sum4=(sum4+Fo[s]);
          }
        double y2=sum3/sum4;
-      FuzzySySY2(y2);
-      return y1;
+      FuzzySySY2(y2); //SALIDA FINAL Y2 VEL DEL AUTO
+      return y1; //SALIDA FINAL Y1 GIRO DEL AUTO
 }
-double FuzzySySY2(double y2){
- return y2;
+double FuzzySySY2(double y2){ //FUNCION AUXILIAR
+ return y2;  //SALIDA FINAL Y2 VEL DEL AUTO
 }
 
  
