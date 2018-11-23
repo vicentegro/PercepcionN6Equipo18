@@ -2,6 +2,9 @@
 
 #include <Servo.h>
 #include <LEANTEC_ControlMotor.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 double inputs[2]; //array de entradas para sistema difuso
 int reglas=9; //cantidad de reglas difusas
@@ -16,10 +19,10 @@ int tabla_reglas[9][4]=    {{1,	1,	1,	1},
                             {3,	1,	2,	1},
                             {3,	2,	3,	2},
                             {3,	3,	3,	3}}; //tabla de reglas difusas
-int trigger=3; //pin de trigger del sensor
-int echo=2; //pin de echo del sensor
+int trigger=12; //pin de trigger del sensor
+int echo=13; //pin de echo del sensor
 Servo servito; //declara servo
-controlMotor control(); //declara el control para los motores del auto
+ControlMotor control(2,3,7,4,5,6); //declara el control para los motores del auto
 long distanciaOb; //variable de distancia del objeto
 int direccionOb; //direccion del objeto
 long distanciaNew;
@@ -29,7 +32,7 @@ double giroAuto,velAuto; //salidas del sistema difuso con las que se controla el
 
 
 void setup(){
-servito.attach(10); //definir puerto para servo
+servito.attach(11); //definir puerto para servo
 pinMode(trigger,OUTPUT); //define puertos para sensor
 pinMode(echo,INPUT);
 }
@@ -46,11 +49,11 @@ void loop(){
  giroOb=dirNew-direccionOb; //objeto se desplaza a un lado u otro
  avanceOb=distanciaNew-distanciaOb; //objeto avanza o retrocede
  /******************************/
-   inputs[0]=double(giroOb); //CONVERSION y guardado en array PARA SISTEMA DIFUSO
-   inputs[1]=double(avanceOb);
+   inputs[0]=giroOb; //CONVERSION y guardado en array PARA SISTEMA DIFUSO
+   inputs[1]=avanceOb;
       
-   giroAuto= (((FuzzySysY1(inputs,tabla_reglas))-(-100))*(1-(-1))/(100-(-100)))-1; //desnormalizando salidas
-   velAuto = (((FuzzySySY2()-(-254))*(1-(-1))/(254-(-254)))-1;;
+   giroAuto= (FuzzySysY1(inputs,tabla_reglas);
+   velAuto = (FuzzySysY2(inputs,tabla_reglas);
    
    control.Motor(velAuto,giroAuto); //SALIDA FINAL A LOS MOTORES
  
@@ -94,7 +97,7 @@ long medicionSensor(){
   /*------------------*/
   t=pulseIn(echo,HIGH); //mide el tiempo que tarda en salir y regresar el pulso sonico
  //calculo de la distancia: velocidad= 2*distancia/tiempo ya que recorre la distancia que sale y en la que regresa
-  d=t/59; (velocidad del sonido 340 m/s se convierte a cm/s)
+  d=t/59; //(velocidad del sonido 340 m/s se convierte a cm/s)
   return d; //salida final del sensor
 }
               
@@ -130,7 +133,7 @@ double Type1FS(double x,int n,double V[]){
     }
   }
   
-double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA
+double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA SALIDA Y1
 {
     double PARAM[3][3]={{-1,-0.5,0} //RANGOS DE LAS FUNCIONES DE MEMBRESIA
                       ,{-0.5, 0, 0.5}
@@ -156,25 +159,52 @@ double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA
    }
       double sum1=0;
       double sum2=0.00000001;
-      double sum3=0;
-      double sum4=0.00000001;
+     
       /***PROCESO DE DESFUSIFICACION POR ALTURAS****/
       for(int r=0;r<=(reglas);r++){ 
          sum1=(sum1+(Fo[r]*AC[DB[r][3]-1]));
          sum2=(sum2+Fo[r]);
          }
-      double y1=sum1/sum2;
+      double y1=(sum1/sum2)-(-100))*(1-(-1))/(100-(-100)))-1;     
+      return y1; //SALIDA FINAL Y1 GIRO DEL AUTO
+}
+
+ double FuzzySysY2(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA LA SALIDA Y2
+{
+    double PARAM[3][3]={{-1,-0.5,0} //RANGOS DE LAS FUNCIONES DE MEMBRESIA
+                      ,{-0.5, 0, 0.5}
+                      ,{0, 0.5, 1}};
+                      
+    double V[3];
+    double AC[3]={0,0.5,1}; //MAXIMOS DE LA SALIDA PARA DESFUSIFICACION
+    double Fo[reglas];
+    for(int r=0;r<=(reglas-1);r++){
+      double sumin=1;
+      int n;
+      for(int i=0;i<=(entradas-1);i++){
+            n=DB[r][i]-1;
+            if(n>-1){
+            V[0]=PARAM[n][0]; //ASIGNACION DE RANGOS PARA LAS FUNCIONES DE MEMBRESIA
+            V[1]=PARAM[n][1];
+            V[2]=PARAM[n][2];
+         }
+          double mf=Type1FS(X[i],(n+1),V); //OBTIENE VALORES FUSIFICADOS DE LAS ENTRADAS
+          sumin=min(sumin,mf); //SE REALIZA LA UNION DIFUSA DE LAS ENTRADAS (AND)
+       }
+     Fo[r] = sumin; //SE GUARDA CONJUNTO DIFUSO DE REGLAS YA UNIDAS
+   }
+     
+      double sum3=0;
+      double sum4=0.00000001;
+      /***PROCESO DE DESFUSIFICACION POR ALTURAS****/
+      
       for(int s=0;s<=(reglas);s++){
          sum3=(sum3+(Fo[s]*AC[DB[s][4]-1]));
          sum4=(sum4+Fo[s]);
          }
-       double y2=sum3/sum4;
-      FuzzySySY2(y2); //SALIDA FINAL Y2 VEL DEL AUTO
-      return y1; //SALIDA FINAL Y1 GIRO DEL AUTO
+       double y2=(sum3/sum4)-(-254))*(1-(-1))/(254-(-254)))-1;
+      
+      return y2; //SALIDA FINAL Y2 VELOCIDAD DEL AUTO
 }
-double FuzzySySY2(double y2){ //FUNCION AUXILIAR
- return y2;  //SALIDA FINAL Y2 VEL DEL AUTO
-}
-
  
               
