@@ -25,7 +25,7 @@ Servo servito; //declara servo
 ControlMotor control(2,3,7,4,5,6); //declara el control para los motores del auto
 long distanciaOb; //variable de distancia del objeto
 int direccionOb; //direccion del objeto
-long distanciaNew;
+long distanciaNew,dirNew;
 long avanceOb;
 int giroOb;
 double giroAuto,velAuto; //salidas del sistema difuso con las que se controla el auto
@@ -44,7 +44,7 @@ void loop(){
  
  /*se realiza nueva medicion para saber si el objeto cambió su posición*/
  distanciaNew=medicionSensor(); //nueva medicion
- dirNew=deteccion(distanciaNueva); //nueva deteccion
+ dirNew=deteccion(distanciaNew); //nueva deteccion
  /*NUEVAS VARIABLES*/
  giroOb=dirNew-direccionOb; //objeto se desplaza a un lado u otro
  avanceOb=distanciaNew-distanciaOb; //objeto avanza o retrocede
@@ -52,8 +52,8 @@ void loop(){
    inputs[0]=giroOb; //CONVERSION y guardado en array PARA SISTEMA DIFUSO
    inputs[1]=avanceOb;
       
-   giroAuto= (FuzzySysY1(inputs,tabla_reglas);
-   velAuto = (FuzzySysY2(inputs,tabla_reglas);
+   giroAuto= FuzzySysY1(inputs,tabla_reglas);
+   velAuto = FuzzySysY2(inputs,tabla_reglas);
    
    control.Motor(velAuto,giroAuto); //SALIDA FINAL A LOS MOTORES
  
@@ -61,7 +61,7 @@ void loop(){
            
 
 int deteccion(long x){
-  int theta; //desplazamiento rotacional del servo
+  int theta,th; //desplazamiento rotacional del servo
    for(int i=0;i<=180;i++){
     servito.write(i); //mueve poco a poco la flecha del servo
     if(x>=0 && x<=10){
@@ -165,7 +165,7 @@ double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA SALIDA
          sum1=(sum1+(Fo[r]*AC[DB[r][3]-1]));
          sum2=(sum2+Fo[r]);
          }
-      double y1=(sum1/sum2)-(-100))*(1-(-1))/(100-(-100)))-1;     
+      double y1=(((sum1/sum2)-(-100))*(1-(-1))/(100-(-100)))-1;     
       return y1; //SALIDA FINAL Y1 GIRO DEL AUTO
 }
 
@@ -202,9 +202,8 @@ double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA SALIDA
          sum3=(sum3+(Fo[s]*AC[DB[s][4]-1]));
          sum4=(sum4+Fo[s]);
          }
-       double y2=(sum3/sum4)-(-254))*(1-(-1))/(254-(-254)))-1;
+       double y2=(((sum3/sum4)-(-254))*(1-(-1))/(254-(-254)))-1;
       
       return y2; //SALIDA FINAL Y2 VELOCIDAD DEL AUTO
 }
  
-              
