@@ -27,7 +27,7 @@ long distanciaOb; //variable de distancia del objeto
 int direccionOb; //direccion del objeto
 long distanciaNew,dirNew;
 long avanceOb;
-int giroOb;
+int giroOb; 
 double giroAuto,velAuto; //salidas del sistema difuso con las que se controla el auto
 
 
@@ -42,15 +42,9 @@ void loop(){
  distanciaOb=medicionSensor(); //obtiene dato del sensor
  direccionOb=deteccion(distanciaOb); //obtiene posicion del servo si hay objeto a 10 cm de distancia
  
- /*se realiza nueva medicion para saber si el objeto cambió su posición*/
- distanciaNew=medicionSensor(); //nueva medicion
- dirNew=deteccion(distanciaNew); //nueva deteccion
- /*NUEVAS VARIABLES*/
- giroOb=dirNew-direccionOb; //objeto se desplaza a un lado u otro
- avanceOb=distanciaNew-distanciaOb; //objeto avanza o retrocede
- /******************************/
-   inputs[0]=giroOb; //CONVERSION y guardado en array PARA SISTEMA DIFUSO
-   inputs[1]=avanceOb;
+  /******************************/
+   inputs[0]=((distanciaOb-5)*(1-0)/(25-5))+0; //normalizacion y guardado en array PARA SISTEMA DIFUSO
+   inputs[1]=((direccionOb-0)*(1-0)/(180-0))+0;
       
    giroAuto= FuzzySysY1(inputs,tabla_reglas);
    velAuto = FuzzySysY2(inputs,tabla_reglas);
@@ -60,31 +54,28 @@ void loop(){
 }
            
 
-int deteccion(long x){
-  int theta,th; //desplazamiento rotacional del servo
+int deteccion(){
+  long x;
+  int theta; //desplazamiento rotacional del servo
    for(int i=0;i<=180;i++){
-    servito.write(i); //mueve poco a poco la flecha del servo
-    if(x>=0 && x<=10){
-      theta=servito.read(); //si encuentra algo en una distancia max de 10 cm, el objeto se toma como detectado
-      if (theta > 90){th=theta-90;} //ajusta con respecto al centro
-      else if (theta <90){th=90-theta;}
-      else if(theta ==90){th=theta;} 
-      return th;
+    servito.write(i);//mueve poco a poco la flecha del servo
+    x=medicionSensor(); //mide distancia para encontrar objetos
+    delay(10);
+    if(x>=5 && x<=25){
+      theta=servito.read(); //si encuentra algo en una distancia max de 25 cm, el objeto se toma como detectado
+      return theta;
       }
     }
-    delay(100);
     for(int j=180;j>=0;j--){
-    servito.write(j);
-    if(x>=0 && x<=10){
+     servito.write(j);
+      x=medicionSensor();
+    delay(10);
+    if(x>=5 && x<=25){
       theta=servito.read(); //si encuentra algo en una distancia el objeto se toma como detectado
-      if (theta > 90){th=theta-90;} //ajusta con respecto al centro
-      else if (theta <90){th=90-theta;}
-      else if(theta ==90){th=theta;} 
-      return th;
+      return theta;
       }
     }
-    delay(100);
-  
+      
   }
 
 long medicionSensor(){
@@ -135,10 +126,9 @@ double Type1FS(double x,int n,double V[]){
   
 double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA SALIDA Y1
 {
-    double PARAM[3][3]={{-1,-0.5,0} //RANGOS DE LAS FUNCIONES DE MEMBRESIA
-                      ,{-0.5, 0, 0.5}
-                      ,{0, 0.5, 1}};
-                      
+   double PARAM[3][3]={{0,0.25,0.5} //RANGOS DE LAS FUNCIONES DE MEMBRESIA
+                      ,{0.25, 0.5, 0.75}
+                      ,{0.5, 0.75, 1}};
     double V[3];
     double AC[3]={0,0.5,1}; //MAXIMOS DE LA SALIDA PARA DESFUSIFICACION
     double Fo[reglas];
@@ -165,15 +155,15 @@ double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA SALIDA
          sum1=(sum1+(Fo[r]*AC[DB[r][3]-1]));
          sum2=(sum2+Fo[r]);
          }
-      double y1=(((sum1/sum2)-(-100))*(1-(-1))/(100-(-100)))-1;     
+      double y1=(((sum1/sum2)-0)*(100-(-100))/(1-0)))+(-100);     
       return y1; //SALIDA FINAL Y1 GIRO DEL AUTO
 }
 
  double FuzzySysY2(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA LA SALIDA Y2
 {
-    double PARAM[3][3]={{-1,-0.5,0} //RANGOS DE LAS FUNCIONES DE MEMBRESIA
-                      ,{-0.5, 0, 0.5}
-                      ,{0, 0.5, 1}};
+    double PARAM[3][3]={{0,0.25,0.5} //RANGOS DE LAS FUNCIONES DE MEMBRESIA
+                      ,{0.25, 0.5, 0.75}
+                      ,{0.5, 0.75, 1}};
                       
     double V[3];
     double AC[3]={0,0.5,1}; //MAXIMOS DE LA SALIDA PARA DESFUSIFICACION
@@ -202,7 +192,7 @@ double FuzzySysY1(double X[],int DB[][4]) //SISTEMA DE LOGICA DIFUSA PARA SALIDA
          sum3=(sum3+(Fo[s]*AC[DB[s][4]-1]));
          sum4=(sum4+Fo[s]);
          }
-       double y2=(((sum3/sum4)-(-254))*(1-(-1))/(254-(-254)))-1;
+       double y2=(((sum3/sum4)-0)*(254-(-254))/(1-0)))+(-254);
       
       return y2; //SALIDA FINAL Y2 VELOCIDAD DEL AUTO
 }
